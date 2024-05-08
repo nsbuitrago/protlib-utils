@@ -47,7 +47,7 @@ def make_lib(seq: str, lib_size: int, mut_freq: int) -> set:
 
     :return (set): Library of sequences
     """
-    lib = {}
+    lib = set()
 
     for i in range(lib_size):
         mut_seq = mutate(seq, mut_freq)
@@ -59,7 +59,7 @@ def make_lib(seq: str, lib_size: int, mut_freq: int) -> set:
     return lib
 
 
-def dump_args(args):
+def dump_args(args: argparse.Namespace):
     """
     Write (dump) job arguments to a YAML file
 
@@ -69,50 +69,63 @@ def dump_args(args):
     """
 
     output_path = os.path.join(args.output, "job_args.yaml")
-    with open(f"{output_path}job_args.yaml", "w+") as f:
+    with open(output_path, "w+") as f:
         f.write(
             f"FASTA: {args.fasta}\n"
-            f"mut_freqs: {args.mut_freqs}\n"
-            f"lib_size: {args.lib_size}\n"
-            f"pool: {args.pool}\n"
-            f"output: {args.output}"
+            f"Mutation frequencies: {args.mut_freqs}\n"
+            f"Library size: {args.lib_size}\n"
+            f"Enable pooling: {args.pool}\n"
+            f"Output path: {args.output}"
         )
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Mutagenize a target sequence")
-
-    parser.add_argument("fasta", type=str, help="Path to fasta file.")
-    parser.add_argument("mut_freqs", type=list, help="Mutation frequencies.")
-    parser.add_argument("lib_size", type=int, help="Library size.")
-    parser.add_argument(
-        "-p", "--pool", action="store_true", help="Pool libraries into a single file."
+if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("fasta", type=str, help="Path to fasta file")
+    arg_parser.add_argument(
+        "-m",
+        "--mut_freqs",
+        nargs="+",
+        type=int,
+        help="Mutation frequencies",
+        required=True,
     )
-    parser.add_argument(
-        "-o", "--output", type=str, help="Output directory.", default="output"
+    arg_parser.add_argument(
+        "-l", "--lib_size", type=int, help="Library size", required=True
     )
+    arg_parser.add_argument(
+        "-p", "--pool", action="store_true", help="Pool libraries into a single file"
+    )
+    arg_parser.add_argument(
+        "-o", "--output", type=str, help="Output directory", default="output"
+    )
+    params = arg_parser.parse_args()
+    breakpoint()
 
-    args = parser.parse_args()
-    parents = SeqIO.parse(args.fasta, "fasta")
+    parents = SeqIO.parse(params.fasta, "fasta")
 
-    if not os.path.isdir(args.output):
-        os.makedirs(args.output)
+    if not os.path.isdir(params.output):
+        os.makedirs(params.output)
 
     pooled_lib = pd.DataFrame()
-    for freq in args.mut_freqs:
-        for parent in parents:
+
+    for parent in parents:
+        for freq in params.mut_freqs:
             target_seq = str(parent.seq).upper()
-            lib = make_lib(target_seq, freq, args.lib_size)
-            ids = [f"{parent.id}_s{args.mut_freqs}.{i}" for i in range(args.lib_size)]
+            lib = make_lib(target_seq, params.lib_size, freq)
+
+            ids = [f"{parent.id}_s{freq}.{i}" for i in range(params.lib_size)]
             lib_df = pd.DataFrame(lib, index=ids, columns=["sequence"])
             lib_df.index.name = "id"
 
-            if args.pool:
+            if params.pool:
                 pooled_lib = pd.concat([pooled_lib, lib_df])
             else:
-                lib_df.to_csv(f"{args.output}/{parent.id}_lib.csv")
-                dump_args(args)
+                csv_path = os.path.join(params.output, f"{parent.id}_m{freq}_lib.csv")
+                lib_df.to_csv(csv_path)
+                dump_args(params)
 
-
-if __name__ == "__main__":
-    main()
+    if pooled_lib.shape[0] > 0:
+        csv_path = os.path.join(params.output, "pooled_lib.csv")
+        pooled_lib.to_csv(csv_path)
+        dump_args(params)
