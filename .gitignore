@@ -2,4 +2,7 @@
 **/.DS_Store
 .venv
 .devenv
+*.fa
+output
+**/__pycache__
 

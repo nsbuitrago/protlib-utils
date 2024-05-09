@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from Bio.Seq import Seq
 
 
-def generate_heatmap(lib_path: str, lib_type: str):
+def generate_heatmap(lib_path: str, lib_type: str = "DNA"):
     """
     Generate and plot a heatmap of amino acid probabilities by position for
     a given library.
@@ -19,13 +19,13 @@ def generate_heatmap(lib_path: str, lib_type: str):
     lib_size = len(lib)
     amino_acids = "ACDEFGHIKLMNPQRSTVWY"
 
-    if lib_type == "dna":
+    if lib_type == "DNA":
         lib["aa_sequence"] = lib["sequence"].apply(lambda x: str(Seq(x).translate()))
 
     lib = lib.groupby("aa_sequence").size().reset_index(name="count")
 
     # Initialize a dictionary to hold the frequency data
-    frequency_matrix = {aa: [0] * len(lib["aa_seq"].iloc[0]) for aa in amino_acids}
+    frequency_matrix = {aa: [0] * len(lib["aa_sequence"].iloc[0]) for aa in amino_acids}
 
     for index, row in lib.iterrows():
         sequence = row["aa_sequence"]

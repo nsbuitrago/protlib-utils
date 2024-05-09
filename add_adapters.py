@@ -14,7 +14,8 @@ def add_adapters(adapter_path: str, lib_path: str, output_path: str):
     :param output_path: str
     """
     adapters = list(SeqIO.parse(adapter_path, "fasta"))
-    adapters = (str(adapters[0].seq), str(adapters[1].seq))
+    adapters = (str(adapters[0].seq).upper(), str(adapters[1].seq).upper())
+    breakpoint()
     lib = pd.read_csv(lib_path, index_col="name")
     lib["sequence"] = lib["sequence"].apply(lambda x: adapters[0] + x + adapters[1])
 
