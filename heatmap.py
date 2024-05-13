@@ -5,16 +5,19 @@ import matplotlib.pyplot as plt
 from Bio.Seq import Seq
 
 
-def generate_heatmap(lib_path: str, lib_type: str = "DNA"):
+def get_aa_pos_prob(lib_path: str, lib_type: str = "DNA") -> pd.DataFrame:
     """
-    Generate and plot a heatmap of amino acid probabilities by position for
-    a given library.
+    Compute the matrix of amino acid or DNA probability by position for a given
+    library.
 
-    :param lib_path str:
-        Path to the library csv file
-    :param lib_type str:
-        Type of library: DNA or PROTEIN
+    :param lib_path str: Path to the library csv file
+    :param lib_type str: Type of library (DNA or PROTEIN)
+        The returned probability matrix will use either DNA or AA based on the
+        lib_type.
+
+    :return pd.DataFrame: AA or DNA probability matrix
     """
+
     lib = pd.read_csv(lib_path)
     lib_size = len(lib)
     amino_acids = "ACDEFGHIKLMNPQRSTVWY"
@@ -38,11 +41,25 @@ def generate_heatmap(lib_path: str, lib_type: str = "DNA"):
     frequency_matrix = pd.DataFrame(frequency_matrix)
 
     # Normalize the frequencies by the total read counts to get probabilities
-    frequency_matrix = frequency_matrix.div(lib_size, axis=0)
+    return frequency_matrix.div(lib_size, axis=0)
+
+
+def generate_heatmap(lib_path: str, lib_type: str = "DNA"):
+    """
+    Generate and plot a heatmap of amino acid probabilities by position for
+    a given library.
+
+    :param lib_path str:
+        Path to the library csv file
+    :param lib_type str:
+        Type of library: DNA or PROTEIN
+    """
+
+    prob_matrix = (lib_path, lib_type)
 
     # Plotting the heatmap
     plt.figure(figsize=(12, 8))
-    sb.heatmap(frequency_matrix.transpose(), cmap="Blues", annot=False)
+    sb.heatmap(prob_matrix.transpose(), cmap="Blues", annot=False)
     plt.title("Amino Acid Frequency by Position")
     plt.xlabel("Position")
     plt.ylabel("Amino Acid")
