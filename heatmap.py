@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from Bio.Seq import Seq
 
 
-def get_aa_pos_prob(lib_path: str, lib_type: str = "DNA") -> pd.DataFrame:
+def get_aa_pos_prob(lib: pd.DataFrame, lib_type: str = "DNA") -> pd.DataFrame:
     """
     Compute the matrix of amino acid or DNA probability by position for a given
     library.
@@ -18,20 +18,19 @@ def get_aa_pos_prob(lib_path: str, lib_type: str = "DNA") -> pd.DataFrame:
     :return pd.DataFrame: AA or DNA probability matrix
     """
 
-    lib = pd.read_csv(lib_path)
     lib_size = len(lib)
     amino_acids = "ACDEFGHIKLMNPQRSTVWY"
 
     if lib_type == "DNA":
-        lib["aa_sequence"] = lib["sequence"].apply(lambda x: str(Seq(x).translate()))
+        lib["sequence"] = lib["sequence"].apply(lambda x: str(Seq(x).translate()))
 
-    lib = lib.groupby("aa_sequence").size().reset_index(name="count")
+    lib = lib.groupby("sequence").size().reset_index(name="count")
 
     # Initialize a dictionary to hold the frequency data
-    frequency_matrix = {aa: [0] * len(lib["aa_sequence"].iloc[0]) for aa in amino_acids}
+    frequency_matrix = {aa: [0] * len(lib["sequence"].iloc[0]) for aa in amino_acids}
 
     for index, row in lib.iterrows():
-        sequence = row["aa_sequence"]
+        sequence = row["sequence"]
         read_count = row["count"]
         for position, amino_acid in enumerate(sequence):
             if amino_acid in frequency_matrix:
@@ -78,4 +77,5 @@ if __name__ == "__main__":
     )
     args = arg_parser.parse_args()
 
-    generate_heatmap(args.lib_path, args.lib_type)
+    lib = pd.read_csv(args.lib_path)
+    generate_heatmap(lib, args.lib_type)
